@@ -44,6 +44,8 @@ namespace Gomoku
             {
                 board[move.position] = (move.isCross) ? 1 : 2;
             }
+
+            blackTurn = LocalStorage.moves[LocalStorage.moves.Count - 1].isCross ? false : true;
         }
 
         public void StartLoop()
