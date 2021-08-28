@@ -98,6 +98,8 @@ namespace Gomoku
                     {
                         DrawBoard(lastSquare);
                         WriteEndText(win);
+                        LocalStorage.moves.Clear();
+                        LocalStorage.ClearMoves();
                         UserPromptEnd();
                     }
                     turn++;
