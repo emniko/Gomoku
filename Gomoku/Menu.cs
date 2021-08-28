@@ -52,8 +52,26 @@ namespace Gomoku
             switch (choice)
             {
                 case 'a':
+                    if (LocalStorage.moves.Count > 0)
+                    {
+                        Program.Initialize();
+                        Board conB = new Board(15, IsCrossPlayer, IsCirclePlayer);
+                        conB.LoadMoves();
+                        conB.StartLoop();
+                        Console.Clear();
+                    }
+                    else 
+                    {
+                        Console.Clear();
+                        DisplayLogo();
+                        Console.WriteLine("No save game found! Play new game...\n");
+                        DisplayMainMenuOptions();
+                        EvaluateMainMenuChoice(PromptPlayer());
+                    }
                     break;
                 case 'b':
+                    LocalStorage.moves.Clear();
+                    LocalStorage.ClearMoves();
                     Program.Initialize();
                     Board b = new Board(15, IsCrossPlayer, IsCirclePlayer);
                     b.StartLoop();
@@ -139,8 +157,9 @@ namespace Gomoku
             Console.WriteLine("\nControls:");
             Console.WriteLine("Arrow Keys = To move the cursor");
             Console.WriteLine("Enter = To place stone/piece");
-            Console.WriteLine("Z = Undo");
-            Console.WriteLine("X = Redo");
+            Console.WriteLine("Z = To undo move");
+            Console.WriteLine("X = To redo move");
+            Console.WriteLine("ESC = To save the game and return to main menu");
             Console.Write("\nPress any key to proceed to main menu...");
             Console.ReadKey();
             Initialize();

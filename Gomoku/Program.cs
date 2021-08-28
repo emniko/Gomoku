@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 
 namespace Gomoku
 {
@@ -7,11 +8,8 @@ namespace Gomoku
         static void Main(string[] args)
         {
             LocalStorage.InitializeSettings();
+            LocalStorage.InitializeMoves();
             Menu.Initialize();
-            //Initialize();
-            //Board b = new Board(15, true, false);
-            //b.StartLoop();
-            //Console.Clear();
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Interoperability", "CA1416:Validate platform compatibility", Justification = "<Pending>")]

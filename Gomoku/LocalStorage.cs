@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace Gomoku
@@ -6,12 +7,14 @@ namespace Gomoku
     public class LocalStorage
     {
         public static string[] settings;
-        private static string fileName = AppDomain.CurrentDomain.BaseDirectory + "\\settings.dat";
+        public static List<Move> moves;
+        private static string settingsFileName = AppDomain.CurrentDomain.BaseDirectory + "\\settings.dat";
+        private static string movesFileName = AppDomain.CurrentDomain.BaseDirectory + "\\moves.dat";
         public static void InitializeSettings() 
         {
-            if (File.Exists(fileName))
+            if (File.Exists(settingsFileName))
             {
-                settings = File.ReadAllLines(fileName);
+                settings = File.ReadAllLines(settingsFileName);
             }
             else
             {
@@ -22,10 +25,29 @@ namespace Gomoku
                 WriteSettings();
             }
         }
+        public static void InitializeMoves()
+        {
+            moves = new List<Move>();
+
+            if (File.Exists(movesFileName))
+            {
+                string[] moveLines = File.ReadAllLines(movesFileName);
+                foreach (string move in moveLines) 
+                {
+                    string[] tokens = move.Split(',');
+                    moves.Add(new Move(Convert.ToBoolean(Convert.ToInt32(tokens[0])), Convert.ToInt32(tokens[1])));
+                }
+            }
+            else
+            {
+                //Blank file
+                using (File.Create(movesFileName)) { } 
+            }
+        }
 
         private static void WriteSettings()
         {
-            using (StreamWriter sw = new StreamWriter(fileName, false))
+            using (StreamWriter sw = new StreamWriter(settingsFileName, false))
             {
                 foreach (string setting in settings)
                 {
@@ -40,6 +62,24 @@ namespace Gomoku
             settings[1] = "Circle=" + Convert.ToInt32(Menu.IsCirclePlayer);
             settings[2] = "Compact=" + Convert.ToInt32(Board.wideningSpacesMode);
             WriteSettings();
+        }
+
+        public static void WriteMoves() 
+        {
+            using (StreamWriter sw = new StreamWriter(movesFileName, false))
+            {
+                foreach (Move move in moves)
+                {
+                    sw.WriteLine($"{Convert.ToInt32(move.isCross)},{move.position}");
+                }
+            }
+        }
+
+        public static void ClearMoves()
+        {
+            using (StreamWriter sw = new StreamWriter(movesFileName, false))
+            {
+            }
         }
     }
 }

@@ -38,6 +38,14 @@ namespace Gomoku
             this.lastSquare = toCopy.lastSquare;
         }
 
+        public void LoadMoves() 
+        {
+            foreach (Move move in LocalStorage.moves) 
+            {
+                board[move.position] = (move.isCross) ? 1 : 2;
+            }
+        }
+
         public void StartLoop()
         {
             Stopwatch s = new Stopwatch();
@@ -96,6 +104,7 @@ namespace Gomoku
                         DebugWrite("Time to simulate 25 turns in miliseconds: " + s.ElapsedMilliseconds);
                         UserPromptEnd();
                     }*/
+                    LocalStorage.moves.Add(new Move(blackTurn, lastMove));
                     EndTurn();
                 }
             }
@@ -196,6 +205,11 @@ namespace Gomoku
                 {
                     Console.CursorLeft += 1;
                 }
+            }
+            else if (key == ConsoleKey.Escape) 
+            {
+                LocalStorage.WriteMoves();
+                Menu.Initialize();
             }
             int cLeftPos = Console.CursorLeft;
             int cTopPos = Console.CursorTop;
@@ -331,7 +345,7 @@ namespace Gomoku
         public void ChangeSquare(int position)
         {
             lastMove = position;
-            board[position] = blackTurn ? 1 : 2;
+            board[position] = blackTurn ? 1 : 2;            
         }
 
         public void EndTurn()
