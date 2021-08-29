@@ -215,6 +215,51 @@ namespace Gomoku
                 LocalStorage.WriteMoves();
                 Menu.Initialize();
             }
+            else if (key == ConsoleKey.Z)
+            {
+                //Undo Redo mode
+
+                if (LocalStorage.moves.Count > 0)
+                {
+                    int i = LocalStorage.moves.Count - 1;
+                    blackTurn = !blackTurn;
+                    Move lastMove = LocalStorage.moves[i];
+                    board[lastMove.position] = 0;
+                    DrawBoard(lastSquare);
+                    if (i - 1 >= 0) i--;
+                    Console.SetCursorPosition(0, 16);
+                    Console.WriteLine("\n\nPress Enter to continue game...");
+                    ConsoleKey _key = Console.ReadKey(true).Key;
+                    while (_key != ConsoleKey.Enter)
+                    {
+                        if (_key == ConsoleKey.Z && i > -1)
+                        {
+                            lastMove = LocalStorage.moves[i];
+                            board[lastMove.position] = 0;
+                            if (i - 1 >= -1) i--;
+                            
+                        }
+                        else if (_key == ConsoleKey.X)
+                        {
+                            if (i + 1 < LocalStorage.moves.Count) i++;
+                            lastMove = LocalStorage.moves[i];
+                            board[lastMove.position] = (lastMove.isCross) ? 1 : 2;
+                                                     
+                        }
+                        blackTurn = !blackTurn;
+                        DrawBoard(lastSquare);
+                        Console.SetCursorPosition(0, 16);
+                        Console.WriteLine("\n\nPress Enter to continue game...");
+                        _key = Console.ReadKey(true).Key;
+                    }
+                    Console.Clear();
+                    if (i + 1 < LocalStorage.moves.Count) 
+                    {
+                        LocalStorage.moves.RemoveRange(i + 1, LocalStorage.moves.Count - (i + 1));
+                    }
+                    StartLoop();
+                }
+            }
             int cLeftPos = Console.CursorLeft;
             int cTopPos = Console.CursorTop;
             if (wideningSpacesMode)
@@ -366,6 +411,7 @@ namespace Gomoku
             ConsoleKey key = Console.ReadKey(true).Key;
             if (key == ConsoleKey.Enter)
             {
+                Console.Clear();
                 board = new int[width * width];
                 StartLoop();
             }
