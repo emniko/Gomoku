@@ -1,186 +1,37 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Threading;
 
 namespace Gomoku
 {
-    class AI
+    //This class is used to handle the movement of computer.
+    class Computer
     {
-        public static Random rand = new Random();
-        private object locker = new();
-        private List<KeyValuePair<int, int>> results = new List<KeyValuePair<int, int>>();
+        //Declaring neccessary variables
+        public static Random random = new Random();
+        private object lockerObj = new();
+        private List<KeyValuePair<int, int>> outcomes = new List<KeyValuePair<int, int>>();
 
-        public AI()
+        //Default Constructor
+        public Computer()
         {
         }
 
-        public int GetRandomMove(Gameboard b, int searchRange = 1)
+        //This function uses the AlphaBetaPruning Algorithm to handle the computer AI.
+        public int AlphaBeta(int alpha, int beta, Gameboard board, int depth, int color)
         {
-            int[] moves = b.GetBestMoves(searchRange);
-            if (moves.Length == 0 && b.board[0] == 0)
-            {
-                return (b.size * b.size) / 2;
-            }
-            else if (moves.Length == 0)
-            {
-                return -1;
-            }
-            return moves[rand.Next(moves.Length)];
-        }
-
-        public int GetHighestValueMove(Gameboard b, int searchRange = 1)
-        {
-            int[] moves = b.GetBestMoves(searchRange);
-            if (moves.Length == 0)
-            {
-                return (b.size * b.size) / 2;
-            }
-            int maxVal = int.MinValue;
-            int bestI = 0;
-            for (int i = 0; i < moves.Length; i++)
-            {
-                Gameboard copy = new Gameboard(b);
-                copy.SwitchSquare(moves[i]);
-                int val;
-                if (b.crossTurn)
-                {
-                    val = AssessGameboard(copy);
-                }
-                else
-                {
-                    val = -AssessGameboard(copy);
-                }
-                if (val > maxVal)
-                {
-                    maxVal = val;
-                    bestI = i;
-                }
-            }
-            return moves[bestI];
-        }
-
-        public int MonteCarloSearch(Gameboard rootState, double searchTimer)
-        {
-            //Check if we can find a winning move in one move
-            string deb = "";
-            if (true)
-            {
-                int winCheck = GetHighestValueMove(rootState, 1);
-                if (winCheck == (rootState.size * rootState.size) / 2)
-                {
-                    return (rootState.size * rootState.size) / 2;
-                }
-                Gameboard copy = new Gameboard(rootState);
-                copy.SwitchSquare(winCheck);
-                int value = rootState.crossTurn ? AssessGameboard(copy) : -AssessGameboard(copy);
-                deb += "Highest 1 ply value move is: " + winCheck.ToString() + ", value " + value.ToString() + ".\n  ";
-                if (value > 9999)
-                {
-                    rootState.DebugWrite(deb);
-                    return winCheck;
-                }
-            }
-            Node root = new Node(rootState.lastSquare, null, rootState, 1);
-            Stopwatch s = new Stopwatch();
-            s.Start();
-            while (s.Elapsed.Seconds < searchTimer)
-            {
-                Node node = root;
-                Gameboard state = new Gameboard(rootState);
-                //Select
-                while (node.untriedMoves.Count == 0 && node.nodes.Count != 0)
-                {
-                    node = NodeSelection(node);
-                    state.SwitchSquare(node.move);
-                    state.SwitchTurn();
-                }
-                //Expand
-                if (node.untriedMoves.Count != 0)
-                {
-                    int move = node.GetRandomMove();
-                    state.SwitchSquare(move);
-                    state.SwitchTurn();
-                    node = node.AddChild(move, state);
-                }
-                //Rollout
-                int lastMove = node.move;
-                while (AssessGameboard(state) == 0)
-                {
-                    //int move = RootAlphaBeta(int.MinValue, int.MaxValue, state, 2);
-                    int move = GetHighestValueMove(state, 1);
-                    state.SwitchSquare(move);
-                    state.SwitchTurn();
-                    lastMove = move;
-                }
-                //Backpropagate
-                int result = state.EvaluateWin(lastMove);
-                while (node != null)
-                {
-                    node.games++;
-                    if (result == -1)
-                    {
-                        node.wins += 0.4;
-                    }
-                    else if ((result == 1 && rootState.crossTurn) || (result == 2 && !rootState.crossTurn))
-                    {
-                        node.wins += 1;
-                    }
-                    else
-                    {
-                        node.wins += 0;
-                    }
-                    node = node.parent;
-                }
-            }
-            int bestI = 0;
-            double bestValue = double.MinValue;
-            for (int i = 0; i < root.nodes.Count; i++)
-            {
-                double val = root.nodes[i].games * (root.nodes[i].wins / root.nodes[i].games);
-                if (val > bestValue)
-                {
-                    deb += "Move: " + root.nodes[i].move.ToString() + " has Wins " + root.nodes[i].wins.ToString("0.0") + ", games " + root.nodes[i].games.ToString() + ", = " + (root.nodes[i].wins / root.nodes[i].games).ToString("0.000") + ".\n  ";
-                    bestI = i;
-                    bestValue = val;
-                }
-            }
-            rootState.DebugWrite(deb);
-            //rootState.DebugWrite("Done finding move from " + root.nodes.Count.ToString() + " available.");
-            return root.nodes[bestI].move;
-        }
-
-        public Node NodeSelection(Node n)
-        {
-            int bestN = 0;
-            double bestV = double.MinValue;
-            for (int i = 0; i < n.nodes.Count; i++)
-            {
-                //double value = Math.Sqrt(2*Math.Log(n.games)/n.nodes[i].games);
-                double value = (double)n.nodes[i].wins / (double)n.nodes[i].games + 2.0 * Math.Sqrt(2 * Math.Log(n.games) / n.nodes[i].games);
-                if (value > bestV)
-                {
-                    bestN = i;
-                    bestV = value;
-                }
-            }
-            return n.nodes[bestN];
-        }
-
-        public int AlphaBeta(int alpha, int beta, Gameboard b, int depth, int color)
-        {
-            Gameboard bCopy = b;
+            Gameboard boardClone = board;
             if (depth == 0)
             {
-                return AssessGameboard(bCopy) * color;
+                return AssessGameboard(boardClone) * color;
             }
-            int[] moves = bCopy.GetBestMoves();
+            int[] moves = boardClone.GetBestMoves();
             for (int i = 0; i < moves.Length; i++)
             {
-                bCopy = new Gameboard(b);
-                bCopy.SwitchSquare(moves[i]);
-                color = bCopy.crossTurn ? -1 : 1;
-                int value = AssessGameboard(bCopy) * color;
+                boardClone = new Gameboard(board);
+                boardClone.SwitchSquare(moves[i]);
+                color = boardClone.crossTurn ? -1 : 1;
+                int value = AssessGameboard(boardClone) * color;
                 if (value > 9000)
                 {
                     return -value * depth;
@@ -189,72 +40,41 @@ namespace Gomoku
                 {
                     return -value * depth;
                 }
-                bCopy.SwitchTurn();
-                int score = -AlphaBeta(-beta, -alpha, bCopy, depth - 1, color);
+                boardClone.SwitchTurn();
+                int score = -AlphaBeta(-beta, -alpha, boardClone, depth - 1, color);
                 if (beta != -2147483648 && score >= beta) return beta;
                 if (score > alpha) alpha = score;
             }
             return alpha;
         }
 
-        public int RootAlphaBeta(int alpha, int beta, Gameboard board, int depth)
+        //This is the optimized version of AlphaBetaPruning Algorithm
+        public int AlphaBetaOptimized(int alpha, int beta, Gameboard board, int depth, int color, List<int> lastMoves)
         {
-            Stopwatch s = new Stopwatch();
-            s.Start();
-            Gameboard bCopy = board;
-            int[] moves = bCopy.GetBestMoves();
-            if (moves.Length == 0)
-            {
-                return (board.size * board.size) / 2;
-            }
-            int bestId = 0;
-            int color = board.crossTurn ? 1 : -1;
-            string deb = "";
-            for (int i = 0; i < moves.Length; i++)
-            {
-                bCopy = new Gameboard(board);
-                bCopy.SwitchSquare(moves[i]);
-                bCopy.SwitchTurn();
-                int score = -AlphaBeta(-beta, -alpha, bCopy, depth - 1, color);
-                if (score > alpha)
-                {
-                    alpha = score;
-                    bestId = i;
-                    deb += "Move: " + moves[i].ToString() + " has value " + score.ToString() + ".\n  ";
-                }
-            }
-            s.Stop();
-            deb += "\n\n  Execution took " + s.ElapsedMilliseconds.ToString() + " miliseconds.";
-            //board.DebugWrite(deb);
-            return moves[bestId];
-        }
-
-        public int AlphaBetaOptimized(int alpha, int beta, Gameboard b, int depth, int color, List<int> movesLast)
-        {
-            Gameboard bCopy = b;
+            Gameboard boardClone = board;
             if (depth == 0)
             {
-                return AssessGameboard(bCopy) * color;
+                return AssessGameboard(boardClone) * color;
             }
             List<int> moves;
-            if (movesLast != null)
+            if (lastMoves != null)
             {
-                moves = movesLast;
+                moves = lastMoves;
             }
             else
             {
-                moves = new List<int>(bCopy.GetBestMoves());
+                moves = new List<int>(boardClone.GetBestMoves());
             }
             for (int i = 0; i < moves.Count; i++)
             {
-                bCopy = new Gameboard(b);
-                if (bCopy.board[moves[i]] != 0)
+                boardClone = new Gameboard(board);
+                if (boardClone.board[moves[i]] != 0)
                 {
                     continue;
                 }
-                bCopy.SwitchSquare(moves[i]);
-                color = bCopy.crossTurn ? -1 : 1;
-                int value = AssessGameboard(bCopy) * color;
+                boardClone.SwitchSquare(moves[i]);
+                color = boardClone.crossTurn ? -1 : 1;
+                int value = AssessGameboard(boardClone) * color;
                 if (value > 9000)
                 {
                     return -value * depth;
@@ -263,9 +83,9 @@ namespace Gomoku
                 {
                     return -value * depth;
                 }
-                bCopy.SwitchTurn();
+                boardClone.SwitchTurn();
                 List<int> movesCopy = new List<int>(moves);
-                int[] movesToAdd = FindNewMoves(bCopy, bCopy.previousMove);
+                int[] movesToAdd = FindNewMoves(boardClone, boardClone.previousMove);
                 for (int j = 0; j < movesToAdd.Length; j++)
                 {
                     if (!movesCopy.Contains(movesToAdd[j]))
@@ -273,7 +93,7 @@ namespace Gomoku
                         movesCopy.Add(movesToAdd[j]);
                     }
                 }
-                int score = -AlphaBetaOptimized(-beta, -alpha, bCopy, depth - 1, color, movesCopy);
+                int score = -AlphaBetaOptimized(-beta, -alpha, boardClone, depth - 1, color, movesCopy);
                 if (beta != -2147483648 && score >= beta) return beta;
                 if (score > alpha) alpha = score;
             }
@@ -284,15 +104,15 @@ namespace Gomoku
         {
             if (moves.Length == 0)
             {
-                lock (locker)
+                lock (lockerObj)
                 {
-                    results.Add(new KeyValuePair<int, int>(-1, -1));
+                    outcomes.Add(new KeyValuePair<int, int>(-1, -1));
                 }
                 return;
             }
             int alpha = int.MinValue;
             int beta = int.MaxValue;
-            Gameboard bCopy = board;
+            Gameboard bCopy;
             int bestId = 0;
             int color = board.crossTurn ? 1 : -1;
             for (int i = 0; i < moves.Length; i++)
@@ -315,26 +135,24 @@ namespace Gomoku
                     bestId = i;
                 }
             }
-            lock (locker)
+            lock (lockerObj)
             {
-                results.Add(new KeyValuePair<int, int>(moves[bestId], alpha));
+                outcomes.Add(new KeyValuePair<int, int>(moves[bestId], alpha));
             }
         }
 
-        public int MultiThreadedRAlphaBeta(Gameboard board, int depth, int maxThreadNum)
+        //This function is used to take turn by computer.
+        public int ComputerSelectSquare(Gameboard board, int depth, int maxThreadNum)
         {
-            Stopwatch s = new Stopwatch();
-            s.Start();
             Queue<int> moves;
             if (depth > 4)
             {
-                moves = new Queue<int>(FindMoves(board, 3));
+                moves = new Queue<int>(SearchMoves(board, 3));
             }
             else
             {
                 moves = new Queue<int>(board.GetBestMoves());
             }
-            //Queue<int> moves = new Queue<int>(board.GetInterestingMoves());
             int moveNum = moves.Count;
             if (moves.Count == 0)
             {
@@ -342,13 +160,11 @@ namespace Gomoku
             }
             else if (moves.Count == 1)
             {
-                board.DebugWrite("Execution took " + s.ElapsedMilliseconds.ToString() + " miliseconds for " + moveNum + " move. (defmoves) = " + board.GetBestMoves().Length);
                 return moves.Dequeue();
             }
             int bestMove = 0;
             int alpha = int.MinValue;
             int color = board.crossTurn ? 1 : -1;
-            string deb = "";
             int threadNum = 4;
             if (moves.Count <= 4)
             {
@@ -370,7 +186,7 @@ namespace Gomoku
                 }
             }
             Thread[] threads = new Thread[threadNum];
-            results.Clear();
+            outcomes.Clear();
             for (int i = 0; i < threadNum; i++)
             {
                 int[] threadMoves;
@@ -395,20 +211,17 @@ namespace Gomoku
             }
             for (int i = 0; i < threadNum; i++)
             {
-                deb += "Move: " + results[i].Key.ToString() + " has value " + results[i].Value.ToString() + ".\n  ";
-                if (results[i].Value > alpha && results[i].Key != -1)
+                if (outcomes[i].Value > alpha && outcomes[i].Key != -1)
                 {
-                    bestMove = results[i].Key;
-                    alpha = results[i].Value;
+                    bestMove = outcomes[i].Key;
+                    alpha = outcomes[i].Value;
                 }
             }
-            s.Stop();
-            deb += "\n\n  Execution took " + s.ElapsedMilliseconds.ToString() + " miliseconds for " + moveNum + " moves. (defmoves) = " + board.GetBestMoves().Length;
-            //deb += "\n\n After last move FindNewMoves found " + FindNewMoves(board, board.lastMove).Length + " new moves.";
-            //board.DebugWrite(deb);
+
             return bestMove;
         }
 
+        //This function is used to read the full gameboard and get its value.
         public int AssessGameboard(Gameboard state)
         {
             int value = 0;
@@ -427,11 +240,11 @@ namespace Gomoku
                     value += (row) * color;
                 }
             }
-            //state.DebugWrite("Board value: " + value.ToString());
             return value;
         }
 
-        public int[] FindMoves(Gameboard state, int additionalDepth)
+        //This function is used to search the best moves
+        public int[] SearchMoves(Gameboard state, int additionalDepth)
         {
             List<int> moves = new List<int>(state.GetBestMoves());
             //Go through the moves and remove the real bad ones
@@ -449,8 +262,6 @@ namespace Gomoku
                 }
                 int color = copy.crossTurn ? 1 : -1;
                 int value = AlphaBeta(alpha, beta, copy, additionalDepth, color);
-                //Console.WriteLine("move " + moves[i] + " val " + value);
-                //Console.Read();
                 if (value > 10000)
                 {
                     moves.RemoveAt(i);
@@ -467,6 +278,7 @@ namespace Gomoku
             return moves.ToArray();
         }
 
+        //This function is used to find new moves
         public int[] FindNewMoves(Gameboard state, int lastMove)
         {
             List<int> moves = new List<int>();
@@ -493,6 +305,7 @@ namespace Gomoku
             return moves.ToArray();
         }
 
+        //This function is used to find moves in row
         public int[] FindMovesInRow(Gameboard state, int pos, int dirX, int dirY)
         {
             int inRow = 1;

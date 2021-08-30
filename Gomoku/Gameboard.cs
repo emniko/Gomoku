@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 
 namespace Gomoku
 {
@@ -10,13 +9,9 @@ namespace Gomoku
         //Declaring neccessary variables
         public bool crossTurn;
         public bool crossIsHuman = false;
-        private int crossComputerTime = 10;
-        private bool crossComputerUsesAlphaBeta = true;
         public bool circleIsHuman = true;
-        private int circleComputerTime = 10;
-        private bool circleComputerUsesAlphaBeta = true;
         public static bool extensiveBoard = false;
-        private AI ai = new AI();
+        private Computer bot = new Computer();
         public int previousMove = -1;
         public int size;
         public int[] board;
@@ -69,34 +64,13 @@ namespace Gomoku
                 //Computer turn
                 else
                 {
-                    if (crossTurn)
-                    {
-                        if (crossComputerUsesAlphaBeta)
-                        {
-                            lastSquare = ai.MultiThreadedRAlphaBeta(this, 4, 8);
-                        }
-                        else
-                        {
-                            lastSquare = ai.MonteCarloSearch(this, crossComputerTime);
-                        }
-                    }
-                    else
-                    {
-                        if (circleComputerUsesAlphaBeta)
-                        {
-                            lastSquare = ai.MultiThreadedRAlphaBeta(this, 4, 8);
-                        }
-                        else
-                        {
-                            lastSquare = ai.MonteCarloSearch(this, circleComputerTime);
-                        }
-                    }
+                    lastSquare = bot.ComputerSelectSquare(this, 4, 8);
                 }
                 //End Turn Condition
                 if (board[lastSquare] == 0 || board[lastSquare] == 3)
                 {
                     SwitchSquare(lastSquare);
-                    ai.AssessGameboard(this);
+                    bot.AssessGameboard(this);
                     int win = EvaluateWin(lastSquare);
                     if (win != 0)
                     {
@@ -503,15 +477,6 @@ namespace Gomoku
             }
             Console.WriteLine();
             Console.SetCursorPosition(0, 0);
-        }
-
-        //This function is used to display some message onto the console (only used for debugging purpose)
-        public void DebugWrite(string toWrite)
-        {
-            Console.Clear();
-            DrawGameboard();
-            Console.SetCursorPosition(2, 3 + size);
-            Console.WriteLine(toWrite);
         }
 
         //This function is used to store the best moves.
