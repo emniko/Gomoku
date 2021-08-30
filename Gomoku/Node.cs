@@ -11,11 +11,11 @@ namespace Gomoku
         public Node parent;
         public List<Node> nodes = new List<Node>();
 
-        public Node(int move, Node parent, Board state, int searchRange = 1)
+        public Node(int move, Node parent, Gameboard state, int searchRange = 1)
         {
             this.move = move;
             this.parent = parent;
-            this.untriedMoves = new List<int>(state.GetInterestingMoves(searchRange));
+            this.untriedMoves = new List<int>(state.GetBestMoves(searchRange));
         }
 
         public int GetRandomMove()
@@ -26,7 +26,7 @@ namespace Gomoku
             return move;
         }
 
-        public Node AddChild(int move, Board state)
+        public Node AddChild(int move, Gameboard state)
         {
             Node child = new Node(move, this, state);
             nodes.Add(child);
